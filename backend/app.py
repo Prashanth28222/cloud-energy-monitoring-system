@@ -95,7 +95,7 @@ def log_energy():
     kwh = data.get("kwh")
     if kwh is None:
         return jsonify({"error": "kwh required"}), 400
-    doc = {"username": username, "kwh": float(kwh), "timestamp": datetime.utcnow()}
+    doc = {"username": username, "kwh": float(kwh), "timestamp": datetime.now(timezone.utc)}
     result = energy_logs_col.insert_one(doc)
     doc["_id"] = str(result.inserted_id)
     doc["timestamp"] = doc["timestamp"].isoformat()
@@ -139,7 +139,7 @@ def log_appliance():
         "username": username,
         "appliance": appliance,
         "kwh": float(kwh),
-        "timestamp": datetime.utcnow(),
+        "timestamp": datetime.now(timezone.utc),
     }
     result = appliance_logs_col.insert_one(doc)
     doc["_id"] = str(result.inserted_id)
@@ -171,7 +171,7 @@ def weekly_summary():
     username, err = get_current_user()
     if err:
         return err
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     labels = []
     data = []
     for i in range(6, -1, -1):
@@ -194,7 +194,7 @@ def monthly_summary():
     username, err = get_current_user()
     if err:
         return err
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     import calendar
     days_in_month = calendar.monthrange(now.year, now.month)[1]
@@ -273,7 +273,7 @@ def billing_summary():
     username, err = get_current_user()
     if err:
         return err
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     total_kwh = sum(
         d["kwh"]
@@ -300,7 +300,7 @@ def cost_by_appliance():
     username, err = get_current_user()
     if err:
         return err
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     settings = get_user_settings(username)
     rate = settings["electricity_rate"]
@@ -321,4 +321,4 @@ def cost_by_appliance():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=PORT)
+    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host="0.0.0.0", port=PORT)
