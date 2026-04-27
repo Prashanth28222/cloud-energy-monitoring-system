@@ -1,8 +1,8 @@
-# cloud-energy-monitoring-system
-This is a personal cloud project to monitor energy usage using AWS it focuses on cloud architecture,storage and reporting
 # ⚡ Energy Monitoring System
 
 A modern, full-stack web application for tracking and analyzing household energy consumption with real-time insights, cost calculation, and energy-saving recommendations.
+
+**Tech Stack:** React (Vite) + Flask (Python) + MongoDB
 
 ## 🌟 Features
 
@@ -38,65 +38,108 @@ A modern, full-stack web application for tracking and analyzing household energy
 
 ### Backend
 - **Framework:** Flask (Python)
-- **Database:** SQLite3
+- **Database:** MongoDB (via `pymongo`)
+- **Auth:** JWT (`PyJWT`) + bcrypt (`flask-bcrypt`)
 - **API:** RESTful API with CORS support
-- **Features:** User authentication, data analysis, cost calculation
 
 ### Frontend
-- **HTML5, CSS3, JavaScript**
-- **Chart Library:** Chart.js
-- **Styling:** Modern gradient design with responsive layout
-- **Features:** Real-time updates, modern UI/UX
+- **Framework:** React 19 + Vite
+- **Charts:** Chart.js via `react-chartjs-2`
+- **HTTP Client:** Axios
+- **Routing:** React Router v7
+- **Styling:** CSS Modules (purple theme)
 
 ## 📁 Project Structure
 
 ```
-energy-monitoring/
-│
+cloud-energy-monitoring-system/
 ├── backend/
-│   ├── app.py                 # Main Flask application
-│   ├── energy.db              # SQLite database
-│   └── requirements.txt        # Python dependencies
-│
+│   ├── app.py                # Flask application (MongoDB)
+│   ├── requirements.txt      # Python dependencies
+│   └── .env.example          # Environment variable template
 ├── frontend/
-│   └── index.html             # Single-page application
-│
-└── README.md                  # Project documentation
+│   ├── src/
+│   │   ├── api/client.js     # Axios API client
+│   │   ├── context/          # Auth context (JWT + localStorage)
+│   │   ├── components/       # Header
+│   │   └── pages/            # Login, Dashboard
+│   ├── .env.example          # Frontend env template
+│   └── package.json
+└── README.md
 ```
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Python 3.8+
-- Modern web browser (Chrome, Firefox, Safari, Edge)
-- pip (Python package manager)
+- Node.js 18+
+- MongoDB (local install or [MongoDB Atlas](https://www.mongodb.com/atlas))
 
-### Installation
+---
 
-1. **Clone or download the project**
+### 1. Start MongoDB
+
+**Local:**
 ```bash
-cd energy-monitoring
+# Install MongoDB Community Edition, then:
+mongod --dbpath /data/db
 ```
 
-2. **Install Python dependencies**
+**Atlas (cloud):** Create a free cluster at [mongodb.com/atlas](https://www.mongodb.com/atlas) and copy the connection string.
+
+---
+
+### 2. Backend Setup
+
 ```bash
+# Install Python dependencies
 pip install -r backend/requirements.txt
-```
 
-Or install manually:
-```bash
-pip install flask flask-cors
-```
+# Copy and edit environment file
+cp backend/.env.example backend/.env
+# Edit backend/.env — set MONGODB_URI and JWT_SECRET
 
-3. **Start the Flask server**
-```bash
+# Start the Flask server
 python backend/app.py
 ```
 
-4. **Open in browser**
+Backend runs at `http://localhost:5000`.
+
+---
+
+### 3. Frontend Setup
+
+```bash
+# Install Node dependencies
+cd frontend
+npm install
+
+# Copy and edit environment file
+cp .env.example .env
+# Edit .env — set VITE_API_BASE_URL if backend is not on localhost:5000
+
+# Start the dev server
+npm run dev
 ```
-http://127.0.0.1:5000
-```
+
+Frontend runs at `http://localhost:5173`.
+
+---
+
+### Environment Variables
+
+**`backend/.env`** (copy from `.env.example`)
+| Variable | Default | Description |
+|---|---|---|
+| `MONGODB_URI` | `mongodb://localhost:27017/energy_monitoring` | MongoDB connection string |
+| `JWT_SECRET` | `dev-secret` | Secret key for JWT tokens — **change in production** |
+| `PORT` | `5000` | Flask port |
+| `FLASK_DEBUG` | `false` | Enable Flask debug mode |
+
+**`frontend/.env`** (copy from `.env.example`)
+| Variable | Default | Description |
+|---|---|---|
+| `VITE_API_BASE_URL` | `http://localhost:5000` | Backend API base URL |
 
 ## 📖 Usage Guide
 
@@ -142,119 +185,68 @@ http://127.0.0.1:5000
 
 ## 🔐 Authentication
 
-### Default Test Credentials
-```
-Username: testuser
-Password: test123
-```
+No default credentials — register a new account via the **Sign Up** tab on the login page.
+JWT tokens are stored in `localStorage` and expire after **1 day**.
 
-You can create your own account by registering!
+## 📊 MongoDB Collections
 
-## 📊 Database Schema
-
-### Users Table
-```
-id: INTEGER PRIMARY KEY
-username: TEXT UNIQUE
-password: TEXT
-created_at: TIMESTAMP
-```
-
-### Energy Logs Table
-```
-id: INTEGER PRIMARY KEY
-username: TEXT
-energy_usage: REAL (kWh)
-timestamp: TIMESTAMP
-```
-
-### Appliance Logs Table
-```
-id: INTEGER PRIMARY KEY
-username: TEXT
-appliance: TEXT
-energy_usage: REAL (kWh)
-timestamp: TIMESTAMP
-```
-
-### User Settings Table
-```
-username: TEXT PRIMARY KEY
-electricity_rate: REAL (₹/kWh)
-monthly_budget: REAL (₹)
-```
+| Collection | Fields |
+|---|---|
+| `users` | `username`, `password` (bcrypt hash) |
+| `energy_logs` | `username`, `kwh`, `timestamp` |
+| `appliance_logs` | `username`, `appliance`, `kwh`, `timestamp` |
+| `user_settings` | `username`, `electricity_rate`, `monthly_budget` |
 
 ## 🎯 API Endpoints
 
-### Authentication
-- `POST /api/login` - User login
-- `POST /api/register` - User registration
+All endpoints (except auth) require `Authorization: Bearer <token>` header.
 
-### Energy Data
-- `POST /api/log-energy` - Log energy usage
-- `GET /api/energy-logs/<username>` - Get all energy logs
-- `GET /api/analysis/<username>` - Get energy analysis
+### Authentication
+- `POST /api/signup` — Register new user → `{token, username}`
+- `POST /api/login` — Login → `{token, username}`
+
+### Energy
+- `POST /api/log-energy` — Body: `{kwh}` → log energy entry
+- `GET /api/energy-logs` — Get all logs for current user
 
 ### Appliances
-- `POST /api/log-appliance` - Log appliance usage
-- `GET /api/appliance-breakdown/<username>` - Get appliance breakdown
+- `GET /api/appliances` — List of supported appliances
+- `POST /api/log-appliance` — Body: `{appliance, kwh}` → log appliance usage
+- `GET /api/appliance-breakdown` — Aggregate kWh per appliance
 
-### Analytics
-- `GET /api/weekly-summary/<username>` - Weekly data
-- `GET /api/monthly-summary/<username>` - Monthly data
+### Summaries
+- `GET /api/weekly-summary` → `{labels, data}` for last 7 days
+- `GET /api/monthly-summary` → `{labels, data}` for current month
 
-### Settings & Cost
-- `GET /api/user-settings/<username>` - Get user settings
-- `POST /api/user-settings/<username>` - Save user settings
-- `GET /api/bill-calculation/<username>` - Get bill details
-- `GET /api/recommendations/<username>` - Get energy recommendations
+### Settings
+- `GET /api/settings` → `{electricity_rate, monthly_budget}`
+- `POST /api/settings/rate` — Body: `{rate}`
+- `POST /api/settings/budget` — Body: `{budget}`
 
-### Export
-- `GET /api/download-csv/<username>` - Download energy logs as CSV
-
-## 💻 Customization
-
-### Change Electricity Rate
-Edit in Frontend Settings or via API:
-```bash
-curl -X POST http://127.0.0.1:5000/api/user-settings/username \
-  -H "Content-Type: application/json" \
-  -d '{"electricity_rate": 7.0, "monthly_budget": 1500}'
-```
-
-### Modify Appliance List
-Edit the appliance dropdown in `frontend/index.html`:
-```html
-<option value="Your Appliance">Your Appliance</option>
-```
-
-### Customize Recommendations
-Edit the `recommendations()` function in `backend/app.py`
+### Billing
+- `GET /api/billing-summary` → `{total_kwh, rate, bill, budget, remaining}`
+- `GET /api/cost-by-appliance` → `{costs: [{appliance, kwh, cost}]}`
 
 ## 🐛 Troubleshooting
 
 ### Flask won't start
 ```bash
 # Make sure port 5000 is not in use
-# Try a different port:
-python backend/app.py --port 5001
+PORT=5001 python backend/app.py
 ```
 
-### Database errors
-```bash
-# Delete the database and restart
-# It will be recreated automatically
-rm backend/energy.db
-python backend/app.py
-```
+### MongoDB connection error
+- Verify MongoDB is running: `mongod --dbpath /data/db`
+- Check `MONGODB_URI` in `backend/.env`
+- For Atlas, whitelist your IP and verify the connection string
 
 ### Login issues
-- Clear browser cache (Ctrl+Shift+Delete)
-- Make sure Flask server is running
+- Clear browser cache / localStorage
+- Make sure Flask server is running on the URL set in `frontend/.env`
 - Check browser console (F12) for errors
 
 ### CORS errors
-- Make sure Flask-CORS is installed
+- Make sure `Flask-CORS` is installed
 - Restart Flask server
 
 ## 📈 Future Enhancements
