@@ -127,8 +127,12 @@ export default function Dashboard() {
 
   // ---- Insights ----
   const totalKwh = energyLogs.reduce((s, l) => s + l.kwh, 0)
-  const avgDaily = energyLogs.length > 0 ? totalKwh / 30 : 0
-  const prediction = avgDaily * 30
+  const uniqueDays = energyLogs.length > 0
+    ? new Set(energyLogs.map(l => new Date(l.timestamp).toDateString())).size
+    : 1
+  const avgDaily = energyLogs.length > 0 ? totalKwh / uniqueDays : 0
+  const DAYS_IN_MONTH = 30
+  const prediction = avgDaily * DAYS_IN_MONTH
   const status = totalKwh > settings.monthly_budget / settings.electricity_rate ? 'High' : 'Good'
 
   // ---- Handlers ----
