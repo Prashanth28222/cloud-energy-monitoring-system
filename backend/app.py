@@ -1,3 +1,4 @@
+import calendar
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -36,7 +37,7 @@ APPLIANCES = [
 def make_token(username: str) -> str:
     payload = {
         "username": username,
-        "exp": datetime.now(tz=timezone.utc) + timedelta(days=7),
+        "exp": datetime.now(tz=timezone.utc) + timedelta(days=1),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
@@ -196,7 +197,6 @@ def monthly_summary():
         return err
     now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    import calendar
     days_in_month = calendar.monthrange(now.year, now.month)[1]
     labels = []
     data = []
